@@ -1,0 +1,37 @@
+name: Sync folder from main repo
+
+on:
+  schedule:
+    # Runs every day at midnight (adjust the cron as needed)
+    - cron: "0 0 * * *"
+  workflow_dispatch: # Allows manual triggering of the workflow
+
+jobs:
+  sync-folder:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout this repository
+      uses: actions/checkout@v3
+
+    - name: Clone the target repository
+      run: |
+        git clone --depth 1 --filter=blob:none --sparse https://github.com/kaltura/moodle_plugin.git other-repo
+        cd other-repo
+        git sparse-checkout set lib/editor/tiny/plugins/kalturamedia
+        git switch MOODLE_404_STABLE
+
+    - name: Copy the folder to the current repository
+      run: |
+        rsync -a lib/editor/tiny/plugins/kalturamedia .
+
+    - name: Commit changes (if any)
+      run: |
+        git config --local user.name "David Scotson"
+        git config --local user.email "david.scotson@city.ac.uk"
+        git add .
+        git diff-index --quiet HEAD || git commit -m "Sync folder from other-repo"
+        git push https://$PAT_TOKEN@github.com/CityUniversityLondon/CUL-tiny-kalturamedia.git HEAD:main
+      env:
+        PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
+
