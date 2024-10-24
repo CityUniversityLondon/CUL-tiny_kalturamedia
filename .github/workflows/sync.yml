@@ -29,7 +29,7 @@ jobs:
         rsync -a upstream/lib/editor/tiny/plugins/kalturamedia/ plugin
 
     - name: Commit changes (if any)
-      working-directory: tiny_kalturamedia
+      working-directory: plugin
       run: |
         git config --local user.name "David Scotson"
         git config --local user.email "david.scotson@city.ac.uk"
