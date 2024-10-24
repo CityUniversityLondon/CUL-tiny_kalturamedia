@@ -1,0 +1,41 @@
+name: Sync folder from main repo
+
+on:
+  schedule:
+    # Runs every day at midnight (adjust the cron as needed)
+    - cron: "0 0 * * *"
+  workflow_dispatch: # Allows manual triggering of the workflow
+
+jobs:
+  sync-folder:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout upstream repository
+      uses: actions/checkout@v4
+      with:
+          repository: kaltura/moodle_plugin
+          ref: MOODLE_404_STABLE
+          sparse-checkout: lib/editor/tiny/plugins/kalturamedia
+          path: upstream
+
+    - name: Checkout plugin
+      uses: actions/checkout@v4
+      with:
+        path: plugin
+
+    - name: Copy the folder to the current repository
+      run: |
+        rsync -a upstream/lib/editor/tiny/plugins/kalturamedia/ plugin
+
+    - name: Commit changes (if any)
+      working-directory: tiny_kalturamedia
+      run: |
+        git config --local user.name "David Scotson"
+        git config --local user.email "david.scotson@city.ac.uk"
+        git add .
+        git diff-index --quiet HEAD || git commit -m "Latest code from upstream"
+        git push https://$PAT_TOKEN@github.com/CityUniversityLondon/CUL-tiny_kalturamedia.git HEAD:MOODLE_405_STABLE
+      env:
+        PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
+
