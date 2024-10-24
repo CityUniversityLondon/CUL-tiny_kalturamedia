@@ -31,7 +31,7 @@ jobs:
         git config --local user.email "david.scotson@city.ac.uk"
         git add .
         git diff-index --quiet HEAD || git commit -m "Sync folder from other-repo"
-        git push https://$PAT_TOKEN@github.com/CityUniversityLondon/CUL-tiny-kalturamedia.git HEAD:main
+        git push https://$PAT_TOKEN@github.com/CityUniversityLondon/CUL-tiny-kalturamedia.git HEAD:MOODLE_405_STABLE
       env:
         PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
 
