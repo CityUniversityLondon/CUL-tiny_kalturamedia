@@ -16,12 +16,16 @@ jobs:
           git clone --filter=blob:none --branch MOODLE_405_STABLE \
             https://github.com/kaltura/moodle_plugin.git upstream
 
-      - name: Split lib/editor/tiny/plugins/kalturamedia subtree
+      - name: Split local/kaltura subtree
         id: split
         working-directory: upstream
         run: |
-          sha=$(git subtree split --prefix=lib/editor/tiny/plugins/kalturamedia HEAD)
+          sha=$(git subtree split --prefix=local/kaltura HEAD)
           echo "sha=$sha" >> $GITHUB_OUTPUT
+          tags=$(git tag --points-at HEAD)
+          echo "tags<<EOF" >> $GITHUB_OUTPUT
+          echo "$tags" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Push to origin
         working-directory: upstream
@@ -29,3 +33,24 @@ jobs:
           git push \
             https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git \
             ${{ steps.split.outputs.sha }}:refs/heads/MOODLE_405_STABLE --force
+
+      - name: Checkout origin
+        uses: actions/checkout@v5
+        with:
+          path: origin
+
+      - name: Mirror upstream tags
+        if: ${{ steps.split.outputs.tags != '' }}
+        working-directory: origin
+        env:
+          SPLIT_SHA: ${{ steps.split.outputs.sha }}
+          TAGS: ${{ steps.split.outputs.tags }}
+        run: |
+          git fetch origin MOODLE_405_STABLE
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          while IFS= read -r tag; do
+            [ -z "$tag" ] && continue
+            git tag "$tag" "$SPLIT_SHA"
+            git push origin "refs/tags/$tag"
+          done <<< "$TAGS"
